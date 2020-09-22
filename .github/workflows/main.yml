@@ -1,0 +1,28 @@
+name: main
+on:
+  push:
+    branches: [ '*' ]
+#    branches-ignore: [ '*' ]
+    tags: [ 'v*' ]
+  pull_request:
+    branches: [ '*' ]
+    tags-ignore: [ 'v*' ]
+jobs:
+  ci:
+    runs-on: ubuntu-18.04
+    steps:
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.15
+
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Taskfile
+        uses: Arduino/actions/setup-taskfile@14c2aaed857d8d82dda425a488b22bd89361702f
+        with:
+          version: 3.x
+
+      - name: QA
+        run: task qa && git diff --exit-code -- . ':!tools' # exclude tools directory for git diff

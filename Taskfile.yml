@@ -1,0 +1,53 @@
+version: '3'
+
+tasks:
+  install-tools:
+    cmds:
+      - GO111MODULE=off go get github.com/axw/gocov/gocov
+        github.com/matm/gocov-html
+        golang.org/x/lint/golint
+        golang.org/x/tools/cmd/goimports
+    status:
+      - test "$(type gocov)" != ""
+      - test "$(type gocov-html)" != ""
+      - test "$(type golint)" != ""
+      - test "$(type goimports)" != ""
+
+  qa:
+    desc: Run a series of quality assurance tasks
+    cmds:
+      - task: fmt
+      - task: lint
+      - task: vet
+      - task: unit
+
+  unit:
+    desc: Run unit tests
+    cmds:
+      - task: install-tools
+      - go test -failfast {{if .run}}-run {{.run}}{{end}} $(go list ./... | grep -v /integration)
+
+  cover:
+    cmds:
+      - task: install-tools
+      - gocov test $(go list ./... | grep -v /integration) > coverage.json
+      - gocov-html coverage.json > coverage.html
+      - gocov report coverage.json
+
+  vet:
+    desc: Run vet tool
+    cmds:
+      - task: install-tools
+      - go vet $(go list ./...)
+
+  lint:
+    desc: Run linter
+    cmds:
+      - task: install-tools
+      - golint -set_exit_status $(go list ./...)
+
+  fmt:
+    desc: Run code formatter
+    cmds:
+      - task: install-tools
+      - goimports -w $(find . -name "*.go" | grep -Ev 'vendor|pb.go|mock|trash' | uniq)
